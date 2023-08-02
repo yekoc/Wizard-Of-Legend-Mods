@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Collect{
     static class CourierOutfit{
         public static OutfitInfo info = new OutfitInfo();
-        internal static int outfitCount = 0;
+        internal static List<string> chargeList = new List<string>();
 
         internal static void Register(){
 	    info.name = "Delivery";
@@ -37,7 +37,7 @@ namespace Collect{
 
                 On.SpellBookUI.hook_AssignPlayerSkill asMod = (orig,self,focus) =>{
                     if(self.playerInfoSelectedType == SpellBookUI.SkillEquipType.Dash && self.player == p && self.currentSkill.isMovementSkill){
-                      self.currentSkill.isDash = true;
+                      ModifySkill(self.currentSkill,true);
                     } 
                     return orig(self,focus);
                   };
@@ -52,7 +52,7 @@ namespace Collect{
 
                 On.Player.hook_AssignSkillSlot asUnmod =   (orig,self,slot,skill,setsig,sig) =>{
                     if(self.assignedSkills[slot] != null && self.assignedSkills[slot].isDash && !(self.assignedSkills[slot] is Player.BaseDashState)){
-                       self.assignedSkills[slot].isDash = false;
+                       ModifySkill(self.assignedSkills[slot],false);
                     }
                     orig(self,slot,skill,setsig,sig);
                   };
@@ -67,7 +67,9 @@ namespace Collect{
                   On.SpellBookUI.AssignPlayerSkill += asMod;
                   On.Player.SkillState.Transition += dummydash;
                   On.Player.AssignSkillSlot += asUnmod;
-                  p.skillChangedEventHandlers += OnSkillChange;
+                  On.Player.AnnounceSkillChanged += OnSkillChange;
+                  On.EnhanceDash.SetEventHandlers += EmpowerDash;
+
                   FixSkillsToDash(p);
 		}
 		else{
@@ -78,10 +80,11 @@ namespace Collect{
                   On.SpellBookUI.AssignPlayerSkill -= asMod;
                   On.Player.SkillState.Transition -= dummydash;
                   On.Player.AssignSkillSlot -= asUnmod;
-                  p.skillChangedEventHandlers -= OnSkillChange;
+                  On.Player.AnnounceSkillChanged -= OnSkillChange;
+                  On.EnhanceDash.SetEventHandlers -= EmpowerDash;
                   var slot = PlayerRoomUI.currentUI.spellBooks[p.playerID].sbRef.skillEquipSlots[SpellBookUI.SkillEquipType.Dash];
                   if(PlayerRoomUI.CurrentUIExists && !(p.assignedSkills[slot] is Player.BaseDashState)){
-                    p.assignedSkills[slot].isDash = false;
+                    ModifySkill(p.assignedSkills[slot],false);
                     p.AssignSkillSlot(slot,Player.DashState.staticID);
                     p.lowerHUD.cooldownUI.RefreshEntries();
                     p.newItemNoticeUI.Display(TextManager.GetSkillName(Player.DashState.staticID), IconManager.GetSkillIcon(Player.DashState.staticID), CooldownUI.GetKeySpriteFromSkillSlot(slot, p.inputDevice), isSkill: true, false, false);
@@ -99,15 +102,39 @@ namespace Collect{
            if(p && p.assignedSkills != null && !p.assignedSkills.Any((s) => s != null && s.isDash)){
              for(int i = 0; i < 6;i++){
                 if(p.assignedSkills[i].isMovementSkill){
-                  p.assignedSkills[i].isDash = true;
+                  ModifySkill(p.assignedSkills[i],true);
                   break;
                 }
              }
            }
         }
 
-        internal static void OnSkillChange(Player.SkillState skill){
-            FixSkillsToDash(skill.parent);
+        internal static void ModifySkill(Player.SkillState s,bool status){
+          if(status){
+              s.isDash = true;
+              if(!s.isChargeSkill){
+                s.InitChargeSkillSettings(1,0f,s.skillData,s);
+                chargeList.Add(s.name);
+              }
+          }
+          else{
+              s.isDash = false;
+              if(chargeList.Contains(s.name) && s.cooldownRef.MaxChargeCount == 1){
+                s.isChargeSkill = false;
+              }
+          }
+        }
+
+        internal static void OnSkillChange(On.Player.orig_AnnounceSkillChanged orig,Player self,Player.SkillState skill){
+            orig(self,skill);
+            if(Collection.PlayerIsWearing(self,info.outfit.outfitID)){
+             FixSkillsToDash(self);
+            }
+        }
+
+        internal static void EmpowerDash(On.EnhanceDash.orig_SetEventHandlers orig,EnhanceDash self,bool status){
+            orig(self,status);
+            Player.ModifySkills(self.cdMod,self.parentPlayer,"cooldown",(s) => s.isDash && !s.name.Contains("Dash"),status);
         }
 
         class DummyDash : State<Player>{
@@ -152,6 +179,8 @@ namespace Collect{
 
             public override void OnEnter()
             {
+                    var dashSkill = parent.skillsDict["Dash"];
+                    forceEvadeStat = (dashSkill as Player.BaseDashState).forceEvadeStat;
                     if (parent.dashSlideIgnored)
                     {
                             cooldownReady = prevCDWasReady;
@@ -161,6 +190,22 @@ namespace Collect{
                             prevCDWasReady = cooldownReady;
                     }
                     parent.dashSlideIgnored = false;
+                    if (parent.skillEnterEventHandlers != null)
+                    {
+                            parent.skillEnterEventHandlers(dashSkill);
+                    }
+                    if (fsm.previousState is Player.SkillState)
+                    {
+                            var prevSkillState = fsm.previousState as Player.SkillState;
+                            if (prevSkillState.isBasic && parent.cancelFromBasicEventHandlers != null)
+                            {
+                                    parent.cancelFromBasicEventHandlers(dashSkill, prevSkillState);
+                            }
+                            else if (parent.cancelToDashEventHandlers != null)
+                            {
+                                    parent.cancelToDashEventHandlers(dashSkill, prevSkillState);
+                            }
+                    }
                     if (forceEvadeStat.CurrentValue)
                     {
                             parent.health.evadeStat.AddMod(evadeMod);

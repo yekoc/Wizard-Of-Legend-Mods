@@ -3,7 +3,7 @@ using BepInEx.Logging;
 
 namespace Collect {
     [BepInDependency("xyz.yekoc.wizardoflegend.LegendAPI",BepInDependency.DependencyFlags.HardDependency)]
-    [BepInPlugin("xyz.yekoc.wizardoflegend.Collection", "COLLECT", "1.0.1")]
+    [BepInPlugin("xyz.yekoc.wizardoflegend.Collection", "COLLECT", "1.0.2")]
     public class Collection : BaseUnityPlugin {
         public static ManualLogSource logger;
         public void Awake() {

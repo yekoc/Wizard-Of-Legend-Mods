@@ -19,7 +19,7 @@ public class BlackFlame : Item{
         }
         public BlackFlame(){
             ID = staticID;
-            category = Category.Misc;
+            category = Category.Offense;
         }
         static BlackFlame(){
 

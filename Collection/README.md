@@ -14,7 +14,7 @@ Outfits:
 Relics:
  * **Badly Monochromed Apple**: Near-misses bring power.
  * **Blueblood Pen**: Who needs healing when you can get mana instead? (Cursed)
- * **Forged Papers**: Sign any name on the dotted line,doesn't have to be yours.
+ * **Forged Papers**: Sign any name on the dotted line.
  * **Black Flame**: Fire damage has weight ~~BLACK FLAME,BLACK FLAME,GIANTS,GIANTS~~
 
 #To-Do
@@ -24,9 +24,11 @@ Relics:
  * Better Icon
 
 Credit to Kvadratisk for the original Risk robe.\
+Credit to Aries13 for the Bad Apple icon.\
 Credit to the GNU image manipulation program for helping me make the icon.\
 Credit to cute anime girls for giving me the will to continue living.
 
 #Changelog
 ---
+1.0.2 - Bugfixes,improved relic interactions with Delivery,new icon for the Bad Apple,moved Black Flame to Offensive category(from Misc)
 1.0.1 - Initial Release
