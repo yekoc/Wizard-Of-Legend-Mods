@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LegendAPI;
 using UnityEngine;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
 
 namespace Collect{
     static class CourierOutfit{
@@ -69,6 +72,7 @@ namespace Collect{
                   On.Player.AssignSkillSlot += asUnmod;
                   On.Player.AnnounceSkillChanged += OnSkillChange;
                   On.EnhanceDash.SetEventHandlers += EmpowerDash;
+                  IL.Player.RandomizeBuild += RandomBuildCompat;
 
                   FixSkillsToDash(p);
 		}
@@ -82,6 +86,8 @@ namespace Collect{
                   On.Player.AssignSkillSlot -= asUnmod;
                   On.Player.AnnounceSkillChanged -= OnSkillChange;
                   On.EnhanceDash.SetEventHandlers -= EmpowerDash;
+                  IL.Player.RandomizeBuild -=RandomBuildCompat;
+
                   var slot = PlayerRoomUI.currentUI.spellBooks[p.playerID].sbRef.skillEquipSlots[SpellBookUI.SkillEquipType.Dash];
                   if(PlayerRoomUI.CurrentUIExists && !(p.assignedSkills[slot] is Player.BaseDashState)){
                     ModifySkill(p.assignedSkills[slot],false);
@@ -123,6 +129,19 @@ namespace Collect{
                 s.isChargeSkill = false;
               }
           }
+        }
+
+        internal static void RandomBuildCompat(ILContext il){
+            ILCursor c = new ILCursor(il);
+            if(c.TryGotoNext(MoveType.After,x => x.MatchLdfld(typeof(Player).GetField(nameof(Player.randSkillsDict))),x => x.MatchLdcI4(1),x => x.MatchCallOrCallvirt(out _))){
+              c.Emit(OpCodes.Ldarg_0);
+              c.EmitDelegate<Func<List<string>,Player,List<string>>>((list,player) =>{
+                if(Collection.PlayerIsWearing(player,info.outfit.outfitID)){
+                 list.AddRange(player.skillsDict.Where((k) => !k.Value.isDash && !k.Value.isBasic && k.Value.isMovementSkill).Select(kvp => kvp.Key)); 
+                }
+                return list;
+              });
+            }
         }
 
         internal static void OnSkillChange(On.Player.orig_AnnounceSkillChanged orig,Player self,Player.SkillState skill){

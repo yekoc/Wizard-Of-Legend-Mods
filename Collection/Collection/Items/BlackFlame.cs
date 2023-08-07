@@ -61,6 +61,7 @@ public class BlackFlame : Item{
          info.text.displayName = "Black Flame";
          info.text.itemID = info.item.ID;
          info.text.description = "Fire Arcana deal part of their damage as physical and have increased knockback";
+         info.priceMultiplier = 4;
          info.icon = icon;
          Items.Register(info);
         }

@@ -35,6 +35,7 @@ public class BadApple : Item{
          info.text.displayName = "Badly Monochromed Apple";
          info.text.itemID = info.item.ID;
          info.text.description = "Grazing attacks provides signature charge and healing.";
+         info.priceMultiplier = 5; 
          info.icon = icon;
          Items.Register(info);
         }
@@ -47,15 +48,18 @@ public class BadApple : Item{
             col.isTrigger = true;
             col.enabled = true;
             col.size = ((BoxCollider2D)parentPlayer.hurtBoxCollider).size + new Vector2(0.5f,0.5f);
-            hitbox.GetComponent<Grazebox>().parentPlayer = parentPlayer;
+            var graze = hitbox.GetComponent<Grazebox>();
+            graze.parentPlayer = parentPlayer;
             hitbox.layer = ProjectileNegateShield.Prefab.transform.GetChild(2).gameObject.layer;
-            hitbox.GetComponent<Grazebox>().emitters = Globals.ChaosInst<OverdriveEffects>(OverdriveEffects.Prefab,parentPlayer.playerObjTrans,parentPlayer.hurtBoxTransform.position).overdriveAuraEmitters;
+            graze.emitters = Globals.ChaosInst<OverdriveEffects>(OverdriveEffects.Prefab,parentPlayer.playerObjTrans,parentPlayer.hurtBoxTransform.position).overdriveAuraEmitters;
+            parentPlayer.hurtBoxTransform.gameObject.AddComponent<GrazeFailBox>().grazebox = graze;
            }
 	}
 
 	public override void Deactivate(){
             if(hitbox){
               GameObject.Destroy(hitbox);
+              GameObject.Destroy(parentPlayer.hurtBoxTransform.GetComponent<GrazeFailBox>());
             }
 	}
 
@@ -77,21 +81,14 @@ public class BadApple : Item{
             public void OnTriggerEnter2D(Collider2D proj){
                 var projComp = proj.transform?.parent?.GetComponent<Projectile>();
                 var attack = projComp ? projComp.attackBox : proj.transform?.GetComponent<Attack>();
-                if((projComp || attack) && (attack.atkInfo.targetNames.Contains(Globals.allyHBStr) || attack.atkInfo.targetNames.Contains(Globals.allyFCStr))){
-                   Debug.Log(proj.gameObject);
+                if((projComp || attack) && (attack.atkInfo != null && attack.atkInfo.targetNames != null && (attack.atkInfo.targetNames.Contains(Globals.allyHBStr) || attack.atkInfo.targetNames.Contains(Globals.allyFCStr)))){
                    list.Add(proj.gameObject);
-                   attack.attackCollisionEventHandlers += (col) => {
-                    if(col == parentPlayer.hurtBoxCollider || col == parentPlayer.floorCollider){
-                     list?.Remove(proj.gameObject);
-                    }
-                   };
                 }
             }
             public void OnTriggerExit2D(Collider2D proj){
                 if(proj?.gameObject && list.Contains(proj.gameObject)){
                    parentPlayer.health.RestoreHealth(1);
                    parentPlayer.OverdriveProgress += 5f;
-                   Debug.Log(proj.gameObject);
                    list.Remove(proj.gameObject);
                    foreach(var ps in emitters){
                      ps.Play();
@@ -105,6 +102,14 @@ public class BadApple : Item{
                 emitters[1].transform.position = transform.position;
                }
             }
+        }
+
+        public class GrazeFailBox : MonoBehaviour{
+           public Grazebox grazebox;
+
+           public void OnTriggerEnter2D(Collider2D coll){
+              grazebox?.list?.Remove(coll.gameObject);
+           }
         }
     }
 }
