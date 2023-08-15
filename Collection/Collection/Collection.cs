@@ -13,6 +13,7 @@ namespace Collect {
          CourierOutfit.Register();
          BlackFlame.Register();
          BadApple.Register();
+         OniChain.Register();
         }
 
      public static void recursebull(UnityEngine.Transform transform,int acc = 0){

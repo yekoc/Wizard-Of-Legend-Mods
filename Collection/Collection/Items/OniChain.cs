@@ -13,7 +13,7 @@ public class OniChain : Item{
 
         public OniChain(){
             ID = staticID;
-            category = Category.Misc;
+            category = Category.Defense;
         }
         static OniChain(){
 
@@ -35,8 +35,42 @@ public class OniChain : Item{
          info.text.description = "While locked into a room,negate the first hit you would have taken.";
          info.icon = icon;
          info.tier = 3;
-         info.priceMultiplier = 4;
+         info.priceMultiplier = 5;
          Items.Register(info);
         }
+
+        public override void Activate(){
+            if(SetParentAsPlayer()){
+               parentPlayer.onSurvivalRoomEnterHandlers += OnEnterSurvival;
+               SurvivalRoom.onSurvivalRoomClearEventHandlers += OnExitSurvival;
+               UpdateItemBar(ItemStatusBar.ItemState.Ready);
+            }
+        }
+
+        public override void Deactivate(){
+            if(SetParentAsPlayer()){
+               parentPlayer.onSurvivalRoomEnterHandlers -= OnEnterSurvival;
+               SurvivalRoom.onSurvivalRoomClearEventHandlers -= OnExitSurvival;
+               RemoveFromItemBar();
+            }
+        }
+
+        public void OnEnterSurvival(Vector3 pos){
+            UpdateItemBar(ItemStatusBar.ItemState.Active);
+            parentPlayer.health.takeDamageEnterHandlers += OnTakeDamage;
+        }
+
+        public void OnExitSurvival(){
+            UpdateItemBar(ItemStatusBar.ItemState.Ready);
+        }
+
+        public void OnTakeDamage(AttackInfo attack,Entity attacker){
+            if(!parentPlayer.health.GuardNextAtk){
+             parentPlayer.health.GuardNextAtk = true;
+             UpdateItemBar(ItemStatusBar.ItemState.Disabled);
+             parentPlayer.health.takeDamageEnterHandlers -= OnTakeDamage;
+            }
+        }
+
     }
 }
