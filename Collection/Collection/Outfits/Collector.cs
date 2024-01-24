@@ -97,7 +97,7 @@ namespace Collect{
                    speed.multiModifier.modValue++;
                 }
             }
-            speed.multiModifier.modValue /= 36;
+            speed.multiModifier.modValue = UnityEngine.Mathf.Min(speed.multiModifier.modValue / 36,0.55f);
             speed.SetModStatus(item.parentPlayer,true);
             }
         }

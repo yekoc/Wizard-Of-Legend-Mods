@@ -9,6 +9,7 @@ namespace Collect{
 public class OniChain : Item{
         public static string staticID = "collect::LockedInHere";
         public static Sprite icon;
+        public bool hooked = false;
 
 
         public OniChain(){
@@ -44,6 +45,23 @@ public class OniChain : Item{
                parentPlayer.onSurvivalRoomEnterHandlers += OnEnterSurvival;
                SurvivalRoom.onSurvivalRoomClearEventHandlers += OnExitSurvival;
                UpdateItemBar(ItemStatusBar.ItemState.Ready);
+               if(!hooked){
+                 IL.BossRoomEventHandler.OnTriggerEnter2D += (il) =>{
+                   ILCursor c = new ILCursor(il);
+                   if(c.TryGotoNext(x => x.MatchLdfld(typeof(BossRoomEventHandler).GetField("triggerWall",(System.Reflection.BindingFlags)(-1))))){
+                       c.EmitDelegate<Action>(() =>{
+                          foreach(Player p in GameController.activePlayers){
+                            if(p && p.inventory != null){
+                              (p.inventory.GetItem(staticID) as OniChain)?.OnEnterSurvival(p.transform.position);
+                            }
+                          }
+                       });
+                   }
+                 };
+                 IL.BossRoomEventHandler.Update += BossCleanup;
+                 IL.FinalBossRoomEventHandler.Update += BossCleanup;
+                 hooked = true;
+               }
             }
         }
 
@@ -61,6 +79,7 @@ public class OniChain : Item{
         }
 
         public void OnExitSurvival(){
+            parentPlayer.health.takeDamageEnterHandlers -= OnTakeDamage;
             UpdateItemBar(ItemStatusBar.ItemState.Ready);
         }
 
@@ -69,6 +88,19 @@ public class OniChain : Item{
              parentPlayer.health.GuardNextAtk = true;
              UpdateItemBar(ItemStatusBar.ItemState.Disabled);
              parentPlayer.health.takeDamageEnterHandlers -= OnTakeDamage;
+            }
+        }
+
+        public void BossCleanup(ILContext il){
+            ILCursor c = new ILCursor(il);
+            if(c.TryGotoNext(MoveType.After,x => x.MatchStfld(typeof(BossRoomEventHandler).GetField("exitSpawned",(System.Reflection.BindingFlags)(-1))))){
+              c.EmitDelegate<Action>(() =>{
+              foreach(Player p in GameController.activePlayers){
+                if(p && p.inventory != null){
+                  (p.inventory.GetItem(staticID) as OniChain)?.OnExitSurvival();
+                }
+               }
+              });
             }
         }
 

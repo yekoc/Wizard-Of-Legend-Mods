@@ -30,6 +30,7 @@ Credit to cute anime girls for giving me the will to continue living.
 
 #Changelog
 ---
+1.0.4 - Made modman respect file structure,limited max move speed from collection.\
 1.0.3 - Random Run compat for Delivery,fixed item prices,tried to improve graze false positives.\
 1.0.2 - Bugfixes,improved relic interactions with Delivery,new icon for the Bad Apple,moved Black Flame to Offensive category(from Misc)\
 1.0.1 - Initial Release

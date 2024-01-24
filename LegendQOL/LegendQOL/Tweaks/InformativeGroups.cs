@@ -34,7 +34,7 @@ namespace LegendQOL{
             if(c.TryGotoNext(x => x.MatchLdstr("\n"))){
               c.Emit(OpCodes.Ldarg_0);
               c.Emit(OpCodes.Ldloc_0);
-              c.EmitDelegate<Func<string,GroupItem,string,string>>((orig,self,itemName) => orig + " ( " + self.itemInven.GetItem(itemName).ExtraInfo + " )");
+              c.EmitDelegate<Func<string,GroupItem,string,string>>((orig,self,itemName) => orig + ((self.itemInven.GetItem(itemName)?.ExtraInfo != String.Empty)?(" ( " + self.itemInven.GetItem(itemName).ExtraInfo + " )") : String.Empty));
             }
         }
     }

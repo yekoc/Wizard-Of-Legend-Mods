@@ -19,7 +19,9 @@ namespace LegendQOL {
         public void Start(){
             foreach(var tweak in tweakList){
               tweak.Init(Config);
-              tweak.Activate();
+              if(tweak.enabled.Value){
+                  tweak.Activate();
+              }
             }
         }
         public void OnDestroy(){
